@@ -1,0 +1,535 @@
+************** USEFUL STUFF ****************************
+
+### Synergy ###
+
+ccm users
+
+*** example of query
+ccm query -o aastrom -s working -task 5447
+
+*** example of list attributes
+ccm attr -l -p ILL_ML_RSA_SIM-aastrom
+
+ccm attr -l ConfigInfo.CI
+
+*** example of attribute copy
+ccm attr -cp release ConfigInfo.CI <to_this_file>
+*** example of attribute copy to a query reference (uses '@')
+ccm attr -cp release ConfigInfo.CI @
+
+
+###############
+
+ip -4 -0 addr show
+
+**************
+
+# list object Ids to find strange ones; useful when generating ConfigInfo is not working
+ccm query "is_member_of('ILL_ML_RSA-arn_067#aastrom')" -f "%name %usage_key %ObjectId %ObjectDescr"
+
+# translate binary log from spu into csv-log http://stoweb01.scan.bombardier.com/~ebiconfig/infopoint/index.php?view=items&cid=2%3Acbi2&id=76%3Aeventlog-read-and-view-an-eventlog-file&option=com_quickfaq&Itemid=175
+
+**************
+
+# to use EQSIM_E on a csv-log from spu
+startTool -tool EQSIM_E -a "evlog2bat.sh"
+
+**************
+
+# to find a specific product/file used within another product (substitute * with product/file name)
+readConfig -q "name='*'" -s sa -f "%name@product %version %path/%name"
+
+#old generateConfigInfo
+/proj/rpglib/tools/released/generateConfigInfo-1.7/generateConfigInfo/distribution/bin/SunOS5.8/generateConfigInfo
+
+**************
+
+##### find forbidden characters in GLE-descriptions ########
+find . | xargs grep "´" *
+find . | xargs grep "'" *
+
+*************** Virtual Box ***************************
+# If connection to MT is slow/not working
+Edit->Preferences->Advanced->Network->Settings->No proxy
+
+
+
+########################################################
+*************** SOE & PSI2IN for RSA *******************
+########################################################
+
+1. Check out project & files in synergy -> work area at /proj/cbi950xx/products/prereleased/RSA
+
+
+2. Create link for LINE in /home/USER/links/ to get a version without DCM-properties, e.g. 
+
+	aastrom@stoxserv09 > ln -s /proj/cbi950xx/products/prereleased/RSA/ILS_RSA_LINE-arn_067#1.12 ILS_RSA_LINE-1.12
+
+
+3. Open DOS-prompt/command line in Windows -> start -> cmd
+
+
+4. Run .bat-file with paths, e.g. /home/aastrom/ccm_wa/RSA/rsa.bat
+
+
+5. Start a readConfig session on product:
+
+	Z:\links> readConfig - p ILS_RSA_LINE-1.12
+	
+
+6. In readConfig window, start SOE/PSI2IN:
+	
+	Z:\links> startTool -t SOE -a "-p PSI2IN -p Infra"
+	
+	
+7. Open SOE-file: File -> Open -> Navigate to /../ILS_product/implementation/input/ILS_product.soe
+
+
+8. Make your configuration changes. See manual at http://hlmccm01.scan.bombardier.com:8181/release/show/2941 for information.
+
+
+9. Generate IntData, ComTab etc: File -> "Save and generate...."
+
+	(In case of changed logical objects etc, it might be necessary to first do "save as" and overwrite the SOE-file before generating data)
+
+
+10. Create compare files: readConfig window in DOS, e.g. for ILS_RSA_LINE-1.12:
+
+	Z:\links> startTool -t PSI2OUT -a "-function compare -product ILS_RSA_LINE-1.11"
+	
+	(provious version 1.11 must be located in same folder as the new version)
+	
+
+11. Generate PSI2OUT data:
+
+	Z:\links> startTool -t PSI2OUT -a "-function generate"
+	
+	
+12. Run Stabgen:
+
+	Z:\links> buildProduct -build Stabgen
+	
+	
+13. Start a readConfig session on the ILS in Linux
+
+
+14. In readConfig window, navigate to /../ILS_product/implementation/
+
+	Create setup file for virtualBox:
+	
+		[aastrom@storhl02 implementation]$ make packagePC
+	
+	Cretae setup files for real machine:
+	
+		[aastrom@storhl02 implementation]$ make package
+		
+************************************************************
+
+******* To change Controller versions with PSI2IN **********
+
+1. Open the SOE-file with a text editor; like Notepad++
+
+2. Manually edit version of "Specification_document_version", from 5.2 to 3.0 in the header of the file. (SOE/PSI2IN uses another CRC which we cannot generate manually. Switching to 3.0 will disable CRC check. Once file is saved within the tool, it will overwrite the header and generate correct CRC again)
+
+3. Use find and replace to change Controller versions. Note that there are usually three different syntaxes, e.g. 
+	* Controller_POINT_E-11.0
+	* Controller_POINT_E.T0-11.0
+	* Controller_POINT_E-11_0
+	
+4. Remember to change palette files in Tools2Config-product.
+
+*************************************************************
+
+
+
+
+##############################################################
+################### READ ME for durban lab ###################
+
+READ ME
+
+For a setup where the ILS is on both spu, keep reading. For a setup where spu1 and spu2 run different ILS, skip to the end of the document.
+
+###################### Real Interlocking (same ILS on both spu) ###########################
+Installing ILS and ITS
+
+1. Copy setup files from access computer to spu1, spu2 and test computer virtual machine.
+	
+	* This can be done with WinSCP located on the desktop. Simply double-click it, select the machine from the list (prasa-sim1, spu1-prasa01, spu2-prasa01) 
+	and click login. You may be prompted for user name and password (root & ebilock respectively).
+	
+	* The setup files are located on the access computer in folder C:\Users\prasa\Durban_Interlocking\ILS_RSA_BAS-x.x-yyyyy\
+	
+	* Copy "ils.ILS_RSA_BAS.setup" and "ilsIbit.ILS_RSA_BAS.setup" from access computer to spu1 and spu2. These files should be placed in /root/RSA/ on the spu.
+	
+	* Copy "ilstest_target.ILS_RSA_BAS.setup" to virtual machine.
+	
+	
+2. Install ILS 
+	
+	* Log on to the spu by double-clicking PuTTY on the desktop. The available machines are preconfigured and displayed in a list, same names as in WinSCP. 
+	Simply highlight one and click open. Best way is to open one window for spu1 and one for spu2 so you can perform the following steps sequencially on both machines.
+	
+	* Stop the current application:
+	
+		[root@spu1 ~]# service vpu stop
+		
+	* Navigate to /root/RSA/. Check the version and date of ILS:
+	
+		[root@spu1 RSA]# ./ils.ILS_RSA_BAS.setup -v
+
+		If this is not the intended version go back to step 1.
+		
+	* Install:
+	
+		[root@spu1 RSA]# ./ils.ILS_RSA_BAS.setup -i
+		
+	* Install Ibit script to allow changing of Ibits (You can also check version with argument -v as in previous step):
+	
+		[root@spu1 RSA]# ./ilsIbit.ILS_RSA_BAS.setup -i
+		
+	* Restart the machine:
+	
+		[root@spu1 RSA]# service vpu restart
+		
+	
+3. Start ILS_RSA_BAS
+	
+	* When the PuTTY session has become inactive as a result of previous restart you need to log on again. Right click top of window and select Restart session. 
+	You will be prompted for user name and password.
+	
+	* Start the spu:
+		You should start one spu and then wait some time (about half a minute) before starting the other one. If the spu is not configured to start again 
+		after the machine has restarted, start it with the following command:
+		
+			[root@spu1 ~]# service vpu start
+		
+		You can check the current mode with command:
+		
+			[root@spu1 ~]# RSA/get_system_mode.sh
+		
+		which will respond with something similar to:
+		
+			Received response to systemStatus, result = OK
+			system = ONLINE
+			dual = CLOSED
+		
+		system = ONLINE is what you are looking for. Once both spu are started, dual will change to OPEN. The other spu will have system = STANDBY.
+		
+	* If desired, run the script for setting release timer Ibits (RSA/set_ibit_time_delay.sh). For some reason it usually fails on the first run. 
+	Simply do ctrl+c and run it again.
+	
+4.	Install ITS
+
+	* Open prasa-sim1 virtual machine by double-clicking the shortcut on the desktop.
+	
+	* Kill any current ITS/CosSimXML by typing "tch quit" in their respective tch-windows.
+	
+	* Navigate to /root/RSA/. Check version and date of ITS:
+		[root@prasa-sim1 RSA]# ./ilstest_target.ILS_RSA_BAS.setup -v
+		
+	* Install:
+		[root@prasa-sim1 RSA]# ./ilstest_target.ILS_RSA_BAS.setup -i
+		
+	* Copy /opt/ilstest/data/PCU_OC_configuration.ILS_RSA_BAS-x.x to /opt/ilstest/data/PCU_OC_configuration.ILS_RSA_BAS-x.x-original so you have access to 
+	the original file if something goes wrong.
+	
+	* Edit the PCU_OC_configuration file so that everything that shall not be simulated is either commented or removed. Comments are lines starting with #. E.g:
+	
+		Ccu5 "CCU_BAS_OBC14" redundant "ILOCK1"
+		0XE205 "W201"
+		0XE201 "W229"
+
+		#Ccu5 "CCU_BAS_OBC2" redundant "ILOCK1"
+		#0X2207 "G558"
+		
+		In above example OBC14 will be simulated by ITS and OBC2 will use real OC.
+		
+	* Start ITS:
+	
+		[root@prasa-sim1 RSA]# /opt/ilstest/startITS 2 c
+		
+		it will display something similar to
+		
+		2: Starting ITS950 with redundant yard network, line mode disabled and SplittScreen disabled...
+		Checking that used IP addresses can be reached:
+		172.11.0.3 ... not possible to ping
+		172.12.0.3 ... OK
+		172.11.0.4 ... not possible to ping
+		172.12.0.4 ... OK
+
+		In the above example, we try to use redundant yard network, but only the network 172.12.x.x is connected. This is not a problem. 
+		You should have ping on at least either pair of 172.11.x.x or 172.12.x.x. 
+		
+	* Start CosSimXML:
+	
+		[root@prasa-sim1 RSA]# /opt/ilstest/startCosSimXML
+		
+		This will prompt a series of questions:
+		
+		- Known CTC Identities
+			1. BKK/admin/system/CTCA
+			2. BKK/admin/system/CTCB
+			Specify the number for the CTC_IDENTITY you want to use ...
+			
+			* Choose option 2, as normal CTC will connect on option 1.
+			
+		- Specify one or two hostnames/IP-addresses for the Interlocking
+			Answer "NO" if you do not want to use it.
+			Hostname or IP-address to interlocking A [hostname|IP-address] ...
+			
+			* type IP of spu1: 172.12.0.3 (or 172.11.0.3 if that is the address you were able to ping)
+			
+		- Hostname or IP-address to interlocking B [hostname|IP-address|NO] ...
+
+			* type IP of spu2: 172.12.0.4 (or 172.11.0.4 if that is the address you were able to ping)
+			
+		- Do you want to display SPU AlarmMessage? [YES|NO] (Default=NO) ...
+
+			* just press enter
+			
+		- Specify listening port number for SLATE (Likely 52001), or press enter if you do  not use SLATE [port number] ...
+		
+			* type 52001. This is the port used by script later on.
+			
+		- In which mode shall CtcSimXml be started?
+		Info: Sub-sequent starts can be changed with parameter [c|g|l|s] for wanted inte rface mode
+		c - command mode (Classic) (TCH window with classic interface)
+		g - GUI with command mode (Classic) (TCH window with classic interface and GUI)
+		l - line mode (TCH in line mode)
+		s - command mode (Splitt screen) (TCH window with SplittScreen)
+		Specify wanted mode (default is s) ...
+
+			* choose option g to use the nice GUI.
+			
+			
+		If the GUI doesn't start because of spread problem, try 
+		
+			[root@prasa-sim1 RSA]# /opt/ilstest/startCosSimXML
+			
+			again.
+			
+		If anything else goes wrong or you did a mistake in the previous steps you can remove the file 
+		
+		/opt/ilstest/data/cosSimXML/etc/ctcsim_config.xml
+		
+		and run the startup again.
+	
+	
+5.	Critical commands script
+
+	Once ControlBlocked displays "false" in the upper right corner of the SS_COS3 CosCommander window, you can run the critical commands script:
+	
+		[root@prasa-sim1 ~]# /opt/ilstest/send_cos_commands.sh
+		
+		It will take approx. 20 min to run all the commands.
+			
+			
+
+6.	You are done.		
+
+
+#######################
+
+On SPU1 and SPU2:
+
+Ibit script for setting ibits ITN1, ITN1O, ITN2, ITN2O is located in
+
+/root/RSA/set_ibit_time_delay.sh
+
+Best way to run it is simply
+
+[root@spu1 ~]# RSA/set_ibit_time_delay.sh 10
+
+if you are in the /root/ directory. For some reason it seems to fail if you run it with "./set_ibit_time_delay 10" while in the /root/RSA/ directory. 
+It takes as argument the value you want for those ibits.
+
+#######################
+
+On test computer (virtual box):
+
+In directory
+
+/opt/ilstest/
+
+there are the scripts for sending vital commands. I have set sleep 2 instead of sleep 5 so they are a bit quicker. You can run them by typing
+
+/opt/ilstest/send_cos_commands.sh
+
+
+The OC-data used for ITS is configured in the file
+
+/opt/ilstest/data/PCU_OC_configuration.ILS_RSA_BAS-x.y
+(where x.y is the version of the ILS, e.g 4.2)
+
+This is the modified file without OBC1 and OBC2. The original file is in the same directory, but is called "PCU_OC_configuration.ILS_RSA_BAS-4.2-original".
+
+
+
+
+################### Virtual Machine ########################
+
+Starting the Virtual Machine
+
+1. Double-click Oracle VM VirtualBox on desktop.
+2. Highlight the machine you want to run, e.g. "durban-edu1" or similar, by clicking on it.
+3. Klick Start (big green arrow)
+
+4. Enter user: 'root', and password: 'ebilock'.
+5. The virtual machine should now be up and running.
+
+Installing ILS and ITS
+
+1. Open a terminal window. Can be done either by right-clicking or from the icon in the menu.
+2. Navigate to the folder with the setup-files (usually a shared folder from Windows)
+3. Type the following:
+	
+	[root@durban-edu1]# ./ils.ILS_RSA_BAS.setup -v
+	
+	This will show version information of the ILS. If this is not the intended version, you need to copy the correct setup files. To install, type the following:
+	
+	[root@durban-edu1]# ./ils.ILS_RSA_BAS.setup -i
+	
+	The ITS is checked and installed in a similar fashion:
+	
+	[root@durban-edu1]# ./ilstest_target.ILS_RSA_BAS.setup -v
+	
+	[root@durban-edu1]# ./ilstest_target.ILS_RSA_BAS.setup -i
+	
+Starting ILS and ITS
+
+1.	In a terminal, navigate to /opt/ils/bin
+	type:
+	
+	[root@durban-edu1 bin]# ./run
+	
+	This will start the interlocking. DO NOT press enter in this terminal window unless you want to shut down the interlocking.
+	
+2. Open a new terminal window and type:
+
+	[root@durban-edu1]# /opt/ilstest/startITS 5 c
+	
+
+###################### Real Interlocking (ILS only on one spu) ###########################
+
+Installing ILS and ITS
+
+1. Follow the steps 1-3 from above (for ILS on two spus) but only install on one spu. Copy the ilstest_target setup-file to the spu as well (folder root/RSA/).
+
+	* After installing Ibit-script, also install the stand alone package if you are going to be using real OCs.
+		
+		[root@spu1 RSA]# ./sp_standAlone_spu-1.4.setup -i
+
+2. Install ITS
+
+	* Open prasa-sim1 virtual machine by double-clicking the shortcut on the desktop.
+	
+	* In the lower right corner there is different workspaces set up for spu1 and spu2. Chose whichever one you are currently working on, e.g. "spu2 | BAS"
+	
+	* Kill any current ITS/CosSimXML by typing "tch quit" in their respective tch-windows.
+	
+	* If you currently do not have a terminal logged on to the correct spu, open a terminal and do
+		[root@prasa-sim1]# ssh -Y root@<spu>
+		
+		where <spu> is the hostname or ip address of the spu, e.g. 172.11.0.3
+	
+	* Navigate to /root/RSA/. Check version and date of ITS:
+		[root@xx]# ./ilstest_target.ILS_RSA_BAS.setup -v
+		
+	* Install:
+		[root@xx]# ./ilstest_target.ILS_RSA_BAS.setup -i
+		
+	* Copy /opt/ilstest/data/PCU_OC_configuration.ILS_RSA_BAS-x.x to /opt/ilstest/data/PCU_OC_configuration.ILS_RSA_BAS-x.x-original so you have access to 
+	the original file if something goes wrong.
+	
+	* Edit the PCU_OC_configuration file so that everything that shall not be simulated is either commented or removed. Comments are lines starting with #. E.g:
+	
+		Ccu5 "CCU_BAS_OBC14" redundant "ILOCK1"
+		0XE205 "W201"
+		0XE201 "W229"
+
+		#Ccu5 "CCU_BAS_OBC2" redundant "ILOCK1"
+		#0X2207 "G558"
+		
+		In above example OBC14 will be simulated by ITS and OBC2 will use real OC.
+		
+	* Start ITS:
+	
+		[root@xx]# /opt/ilstest/startITS 1 c
+		
+		it will display something similar to
+		
+		2: Starting ITS950 with redundant yard network, line mode disabled and SplittScreen disabled...
+		Checking that used IP addresses can be reached:
+		172.11.0.3 ... not possible to ping
+		172.12.0.3 ... OK
+
+		
+	* Start CosSimXML:
+	
+		[root@xx]# /opt/ilstest/startCosSimXML
+		
+		This will prompt a series of questions:
+		
+		- Known CTC Identities
+			1. BKK/admin/system/CTCA
+			2. BKK/admin/system/CTCB
+			Specify the number for the CTC_IDENTITY you want to use ...
+			
+			* Choose option 2, as normal CTC will connect on option 1.
+			
+		- Specify one or two hostnames/IP-addresses for the Interlocking
+			Answer "NO" if you do not want to use it.
+			Hostname or IP-address to interlocking A [hostname|IP-address] ...
+			
+			* type IP of spu1 - since we have the ITS on the spu we do not need to specify ip address, so just type: localhost
+			
+		- Hostname or IP-address to interlocking B [hostname|IP-address|NO] ...
+
+			* since we do not have a second spu just press enter
+			
+		- Do you want to display SPU AlarmMessage? [YES|NO] (Default=NO) ...
+
+			* just press enter
+			
+		- Specify listening port number for SLATE (Likely 52001), or press enter if you do  not use SLATE [port number] ...
+		
+			* type 52001. This is the port used by script later on.
+			
+		- In which mode shall CtcSimXml be started?
+		Info: Sub-sequent starts can be changed with parameter [c|g|l|s] for wanted inte rface mode
+		c - command mode (Classic) (TCH window with classic interface)
+		g - GUI with command mode (Classic) (TCH window with classic interface and GUI)
+		l - line mode (TCH in line mode)
+		s - command mode (Splitt screen) (TCH window with SplittScreen)
+		Specify wanted mode (default is s) ...
+
+			* choose option g to use the nice GUI.
+			
+			
+		If the GUI doesn't start because of spread problem, try 
+		
+			[root@xx]# /opt/ilstest/startCosSimXML
+			
+			again.
+			
+		If anything else goes wrong or you did a mistake in the previous steps you can remove the file 
+		
+		/opt/ilstest/data/cosSimXML/etc/ctcsim_config.xml
+		
+		and run the startup again.
+	
+	
+3.	Critical commands script
+
+	Once ControlBlocked displays "false" in the upper right corner of the SS_COS3 CosCommander window, you can run the critical commands script:
+	
+		[root@xx ~]# /opt/ilstest/send_cos_commands.sh
+		
+		It will take approx. 20 min to run all the commands.
+			
+4. You are done.
+
+
+###########################################
+###########################################
