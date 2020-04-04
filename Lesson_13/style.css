@@ -1,0 +1,42 @@
+body{
+	background: #6384be;
+	background: -webkit-linear-gradient(-45deg, #375283, #cbd6e9);
+	background: linear-gradient(-45deg, #375283, #cbd6e9);
+}
+
+
+P	{
+	color:black; font-family: Arial; font-size: 15px;
+}
+H2	{
+	color:#696969; font-family: Times New Roman; font-size: 35px;text-align: left;
+}
+H1	{
+	color: #696969; font-family: Times New Roman; font-size: 40px;text-align: center;
+}
+
+#Film{
+	float: left;
+	width: 25%;
+	height: 320px;
+}
+#Output{
+	float: right;
+	width: 50%;
+	height: 350px;
+}
+
+#Feature{
+	float: left;
+	width: 50%;
+	height: 350px;
+}
+#Limitations{
+	float: right;
+	width: 50%;
+	height: 350px;
+}
+#Pic{
+	text-align: center;
+	width: 100%;
+}

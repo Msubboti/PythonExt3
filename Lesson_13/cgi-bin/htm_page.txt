@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title> {} </title>
+		<meta charset = "utf-8"/>
+		<meta name = "description" lang="en" content="This library is included popular films with short description"/>
+		<meta name = "keywords" lang="en" content = "Films, what to watch, best films, kinopoisk, 2020"> 
+		<meta name = "Author" content = "Matvii Subbotin"/>
+		<link href="../answer.css" type="text/css" rel="stylesheet">
+	</head>
