@@ -1,1 +1,4 @@
-/Lesson_OOP_3/
+Lesson_OOP_3/venv/
+Lesson_OOP_3/models/__init__.py
+Lesson_OOP_3/virtual_environment
+*.pyc
