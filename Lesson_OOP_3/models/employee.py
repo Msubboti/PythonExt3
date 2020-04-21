@@ -8,6 +8,7 @@ this class is parent for other classes of the program.
 from datetime import datetime, date
 
 
+
 class Employee:
     """
 
@@ -22,6 +23,25 @@ class Employee:
         self.email = email
         self.phone = phone_number
         self.salary = salary
+        self.valid_email()
+        self.save_emeil()
+
+
+    def save_emeil(self):
+        with open(r'email.txt', 'a') as f:
+            f.write(self.email + "\n")
+        f.close()
+
+    def valid_email(self):
+        file = open(r'email.txt', 'r')
+        for line in file:
+            print(line)
+            if self.email in line:
+                raise ValueError('Email has already existed.')
+            else:
+                pass
+        file.close()
+
 
     @staticmethod
     def work():

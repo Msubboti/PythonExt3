@@ -7,6 +7,9 @@ which are child classes for Employee
 from .employee import Employee
 
 
+class UnableToWorkException(Exception):
+    pass
+
 class Recruiter(Employee):
     """
 
@@ -93,6 +96,9 @@ class Candidate:
         self.technologies = technologies
         self.main_skill = main_skill
         self.main_skill_grade = main_skill_grade
+
+    def work(self):
+        raise UnableToWorkException('I am not hired yet, lol')
 
 
 class Vacancy:
